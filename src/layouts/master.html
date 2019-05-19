@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <style>
+    body {
+      font-family: "Lato", serif;
+      font-size: 14px;
+    }
+
+    audio {
+      height: 38px;
+    }
+
+    .container .row {
+      height: 93vh;
+    }
+
+    .title {
+      font-weight: 300;
+    }
+
+    .tipo {
+      display: flex;
+      align-items: center !important;
+      justify-content: center !important;
+      height: 600px;
+      border-radius: 16px;
+      margin-right: 16px;
+      color: #fff;
+    }
+
+    .texto {
+      display: flex;
+      align-items: center !important;
+      justify-content: center !important;
+      height: 600px;
+      border-radius: 16px;
+      color: #fff;
+    }
+
+    .result {
+      position: relative;
+      height: 500px;
+      overflow-x: auto;
+      font-size: 16px;
+      font-weight: 300;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+  <title>Demo</title>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="/">
+      <img src="https://cdn4.iconfinder.com/data/icons/miu-square-flat-social/60/spotify-square-social-media-256.png"
+        width="30" height="30" alt="">
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item <% if(current === 'index') { %> active <% } %>">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item <% if(current === 'file') { %> active <% } %>">
+          <a class="nav-link" href="/speech/file">Archivo</a>
+        </li>
+        <li class="nav-item <% if(current === 'voice') { %> active <% } %>">
+          <a class="nav-link" href="/speech/voice">Voz</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container">
+    <%- body %>
+    <%= current %>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+    integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+    crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+    integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+    crossorigin="anonymous"></script>
+  <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/RecordRTC/5.5.2/RecordRTC.js"></script> -->
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="https://unpkg.com/compromise@latest/builds/compromise.min.js"></script>
+</body>
+
+</html>

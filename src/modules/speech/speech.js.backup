@@ -1,0 +1,240 @@
+var socket;
+  var isEdge = navigator.userAgent.indexOf("Edge") !== -1 && (!!navigator.msSaveOrOpenBlob || !!navigator.msSaveBlob);
+  var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  var btnGrabar = document.getElementById("btnGrabar");
+  var btnDetener = document.getElementById("btnDetener");
+  var btnLiberar = document.getElementById("btnLiberar");
+  var btnDescargar = document.getElementById("btnDescargar");
+  var audio = document.querySelector("audio");
+
+  var recorder;
+  var microphone;
+
+  document.addEventListener("DOMContentLoaded", event => {
+    init();
+  });
+
+  function init() {
+    socket = io();
+    btnGrabar.addEventListener("click", grabar);
+    btnDetener.addEventListener("click", detener);
+    btnLiberar.addEventListener("click", liberar);
+    btnDescargar.addEventListener("click", descargar);
+  }
+
+  function grabar() {
+    this.disabled = true;
+
+    if (!microphone) {
+      captureMicrophone(mic => {
+        microphone = mic;
+
+        if (isSafari) {
+          replaceAudio();
+          audio.muted = true;
+          audio.srcObject = microphone;
+
+          btnGrabar.disabled = false;
+
+          alert("Por favor, haga clic nuevamente en el botón de inicio de grabación. La primera vez que intentamos acceder a tu micrófono. Ahora lo grabaremos.");
+          return;
+        }
+        click(btnGrabar);
+      });
+
+      return;
+    }
+
+    replaceAudio();
+
+    audio.muted = true;
+    audio.srcObject = microphone;
+
+    var options = {
+      type: "audio",
+      numberOfAudioChannels: isEdge ? 1 : 2,
+      checkForInactiveTracks: true,
+      bufferSize: 16384,
+      timeSlice: 1000,
+      ondataavailable: streamAudio
+    };
+    if (isSafari || isEdge) {
+      options.recorderType = StereoAudioRecorder;
+    }
+    if (navigator.platform && navigator.platform.toString().toLowerCase().indexOf("win") === -1) {
+      options.sampleRate = 48000;
+    }
+    if (isSafari) {
+      options.sampleRate = 44100;
+      options.bufferSize = 4096;
+      options.numberOfAudioChannels = 2;
+    }
+    if (recorder) {
+      recorder.destroy();
+      recorder = null;
+    }
+    recorder = RecordRTC(microphone, options);
+    recorder.startRecording();
+
+    socket.emit("start", "");
+
+    btnDetener.disabled = false;
+    btnDescargar.disabled = true;
+  }
+
+  function detener() {
+    this.disabled = true;
+    recorder.stopRecording(stopRecordingCallback);
+
+    socket.emit("end", "");
+  }
+
+  function liberar() {
+    this.disabled = true;
+    btnGrabar.disabled = false;
+    if (microphone) {
+      microphone.stop();
+      microphone = null;
+    }
+    if (recorder) {
+      // click(btnDetener);
+    }
+  }
+
+  function descargar() {
+    this.disabled = true;
+    if (!recorder || !recorder.getBlob()) return;
+    if (isSafari) {
+      recorder.getDataURL(function (dataURL) {
+        saveToDisk(dataURL, getFileName("mp3"));
+      });
+      return;
+    }
+    var blob = recorder.getBlob();
+    var file = new File([blob], getFileName("mp3"), {
+      type: "audio/mp3"
+    });
+    invokeSaveAsDialog(file);
+  }
+
+  function click(el) {
+    el.disabled = false;
+    var evt = document.createEvent("Event");
+    evt.initEvent("click", true, true);
+    el.dispatchEvent(evt);
+  }
+
+  function captureMicrophone(callback) {
+    btnLiberar.disabled = false;
+
+    if (microphone) {
+      callback(microphone);
+      return;
+    }
+    if (typeof navigator.mediaDevices === "undefined" || !navigator.mediaDevices.getUserMedia) {
+      alert("Este navegador no es compatible con la API getUserMedia de WebRTC.");
+      if (!!navigator.getUserMedia) {
+        alert("Este navegador parece ser compatible con la API getUserMedia en desuso.");
+      }
+    }
+    navigator.mediaDevices.getUserMedia({
+      audio: isEdge ? true : {
+        echoCancellation: false
+      }
+    }).then(mic => {
+      callback(mic);
+    }).catch(err => {
+      alert("No se puede capturar su micrófono. Por favor revise los permisos o los registros de su consola.");
+      console.error(err);
+    });
+  }
+
+  function replaceAudio(src) {
+    var newAudio = document.createElement("audio");
+
+    newAudio.controls = true;
+    newAudio.autoplay = true;
+
+    if (src) {
+      newAudio.src = src;
+    }
+
+    var parentNode = audio.parentNode;
+    parentNode.innerHTML = "";
+    parentNode.appendChild(newAudio);
+    audio = newAudio;
+  }
+
+  function stopRecordingCallback() {
+    replaceAudio(URL.createObjectURL(recorder.getBlob()));
+    btnGrabar.disabled = false;
+    setTimeout(function () {
+      if (!audio.paused) return;
+      setTimeout(function () {
+        if (!audio.paused) return;
+        audio.play();
+      }, 1000);
+
+      audio.play();
+    }, 300);
+    audio.play();
+    btnDescargar.disabled = false;
+
+    if (isSafari) {
+      click(btnLiberar);
+    }
+  }
+
+  function getRandomString() {
+    if (window.crypto && window.crypto.getRandomValues && navigator.userAgent.indexOf("Safari") === -1) {
+      var a = window.crypto.getRandomValues(new Uint32Array(3)),
+        token = "";
+      for (var i = 0, l = a.length; i < l; i++) {
+        token += a[i].toString(36);
+      }
+      return token;
+    } else {
+      return (Math.random() * new Date().getTime()).toString(36).replace(/\./g, "");
+    }
+  }
+
+  function getFileName(fileExtension) {
+    var d = new Date();
+    var year = d.getFullYear();
+    var month = d.getMonth();
+    var date = d.getDate();
+    return "RecordRTC-" + year + month + date + "-" + getRandomString() + "." + fileExtension;
+  }
+
+  function SaveToDisk(fileURL, fileName) {
+    // for non-IE
+    if (!window.ActiveXObject) {
+      var save = document.createElement("a");
+      save.href = fileURL;
+      save.download = fileName || "unknown";
+      save.style = "display:none;opacity:0;color:transparent;";
+      (document.body || document.documentElement).appendChild(save);
+      if (typeof save.click === "function") {
+        save.click();
+      } else {
+        save.target = "_blank";
+        var event = document.createEvent("Event");
+        event.initEvent("click", true, true);
+        save.dispatchEvent(event);
+      }
+      (window.URL || window.webkitURL).revokeObjectURL(save.href);
+    }
+    // for IE
+    else if (!!window.ActiveXObject && document.execCommand) {
+      var _window = window.open(fileURL, "_blank");
+      _window.document.close();
+      _window.document.execCommand("SaveAs", true, fileName || fileURL)
+      _window.close();
+    }
+  }
+
+  function streamAudio(blob) {
+    console.log("Stream audio", blob);
+    socket.emit("data", blob);
+  }
