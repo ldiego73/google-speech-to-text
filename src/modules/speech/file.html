@@ -138,7 +138,7 @@
 
       translation.textContent = data.transcription || "Not Found";
 
-      limpiar();
+      limpiar(true);
     }).catch(err => {
       loading.classList.add("d-none");
       console.log(err);
@@ -147,10 +147,10 @@
     });
   }
 
-  function limpiar() {
+  function limpiar(notClearText) {
     file = null;
     audio.value = "";
     titleAudio.textContent = "Subir audio";
-    translation.textContent = "";
+    if (!notClearText) translation.textContent = "";
   }
 </script>

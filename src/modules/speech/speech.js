@@ -1,5 +1,5 @@
-const speech = require('@google-cloud/speech');
-const { Storage } = require('@google-cloud/storage');
+const speech = require("@google-cloud/speech");
+const { Storage } = require("@google-cloud/storage");
 const Socket = require("socket.io");
 const fs = require("fs");
 
@@ -116,11 +116,13 @@ class Speech extends Base {
 
     return new Promise((resolve, reject) => {
       fs.createReadStream(audio.path)
-        .pipe(file.createWriteStream({
-          metadata: {
-            contentType: audio.type
-          }
-        }))
+        .pipe(
+          file.createWriteStream({
+            metadata: {
+              contentType: audio.type
+            }
+          })
+        )
         .on("error", err => {
           log(err);
           ctx.status = 500;
@@ -155,7 +157,9 @@ class Speech extends Base {
     const [response] = await operation.promise();
     const transcription = response.results
       .map(result => {
-        return ` Channel Tag: ${result.channelTag} ${result.alternatives[0].transcript}`;
+        return ` Channel Tag: ${result.channelTag} ${
+          result.alternatives[0].transcript
+        }`;
       })
       .join("\n");
 
