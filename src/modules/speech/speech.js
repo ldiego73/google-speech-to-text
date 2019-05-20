@@ -142,7 +142,11 @@ class Speech extends Base {
   async toText(name) {
     const config = {
       encoding: "LINEAR16",
-      languageCode: "es-PE",
+      languageCode: "es-US",
+      alternativeLanguageCodes: ["es-PE", "es-CL"],
+      diarizationSpeakerCount: 2,
+      enableSpeakerDiarization: true,
+      enableAutomaticPunctuation: true,
       audioChannelCount: 2,
       enableSeparateRecognitionPerChannel: true
     };
@@ -155,12 +159,12 @@ class Speech extends Base {
     };
     const [operation] = await client.longRunningRecognize(r);
     const [response] = await operation.promise();
-    const transcription = response.results
-      .map(result => {
-        return ` Channel Tag: ${result.channelTag} ${
-          result.alternatives[0].transcript
-        }`;
-      })
+    const results = response.results;
+
+    log(JSON.stringify(results));
+
+    const transcription = results
+      .map(result => result.alternatives[0].transcript)
       .join("\n");
 
     return transcription;
