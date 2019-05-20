@@ -2,22 +2,48 @@
   <div class="col-sm tipo bg-dark">
     <div class="text-center">
       <div class="btn-group" role="group" aria-label="Basic example">
-        <button id="btnGrabar" type="button" class="btn btn-secondary">Grabar</button>
-        <button id="btnDetener" type="button" class="btn btn-secondary" disabled>Detener</button>
-        <button id="btnLiberar" type="button" class="btn btn-secondary" disabled>Liberar</button>
-        <button id="btnDescargar" type="button" class="btn btn-secondary" disabled>Descargar</button>
+        <button id="btnGrabar" type="button" class="btn btn-secondary">
+          Grabar
+        </button>
+        <button
+          id="btnDetener"
+          type="button"
+          class="btn btn-secondary"
+          disabled
+        >
+          Detener
+        </button>
+        <button
+          id="btnLiberar"
+          type="button"
+          class="btn btn-secondary"
+          disabled
+        >
+          Liberar
+        </button>
+        <button
+          id="btnDescargar"
+          type="button"
+          class="btn btn-secondary"
+          disabled
+        >
+          Descargar
+        </button>
       </div>
       <div id="loading" class="mt-4 d-none">
         <div class="d-flex align-items-center">
           <strong>Subiendo...</strong>
-          <div class="spinner-border text-light ml-auto" role="status" aria-hidden="true"></div>
+          <div
+            class="spinner-border text-light ml-auto"
+            role="status"
+            aria-hidden="true"
+          ></div>
         </div>
       </div>
       <div class="mt-4">
         <audio controls autoplay playsinline></audio>
       </div>
     </div>
-
   </div>
   <div class="col-sm texto bg-dark">
     <div class="px-2 py-4 w-100">
@@ -25,10 +51,12 @@
         <h3>Translation</h3>
       </div>
       <div class="result">
-        <div id="translation">
-        </div>
+        <div id="translation"></div>
       </div>
-      <div id="sentimentContent" class="row mt-4 align-items-center justify-content-center d-none">
+      <div
+        id="sentimentContent"
+        class="row mt-4 align-items-center justify-content-center d-none"
+      >
         <div id="sentimentText" class="col-md-auto">
           POSITIVO
         </div>
@@ -38,7 +66,10 @@
               id="sentimentValue"
               class="progress-bar progress-bar-striped progress-bar-animated"
               style="width: 50%"
-              role="progressbar">50%</div>
+              role="progressbar"
+            >
+              50%
+            </div>
           </div>
         </div>
       </div>
@@ -69,19 +100,21 @@
   });
 
   function init() {
-    socket = io();
+    if (location.protocol.indexOf("https") === -1) {
+      socket = io("");
 
-    socket.on("connect", function (data) {
-      socket.emit("join", "Server Connected to Client");
-    });
+      socket.on("connect", function(data) {
+        socket.emit("join", "Server Connected to Client");
+      });
 
-    socket.on("messages", function (data) {
-      console.log(data);
-    });
+      socket.on("messages", function(data) {
+        console.log(data);
+      });
 
-    socket.on("speech", function (data) {
-      console.log("Speech", data);
-    });
+      socket.on("speech", function(data) {
+        console.log("Speech", data);
+      });
+    }
 
     btnGrabar.addEventListener("click", grabar);
     btnDetener.addEventListener("click", detener);
@@ -139,37 +172,42 @@
     form.append("detect", true);
     loading.classList.remove("d-none");
 
-    axios.post("/speech/upload", form, {
-      headers: {
-        "Content-Type": "multipart/form-data"
-      }
-    }).then(res => {
-      loading.classList.add("d-none");
+    axios
+      .post("/speech/upload", form, {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      })
+      .then(res => {
+        loading.classList.add("d-none");
 
-      const data = res.data || {};
-      const sentiment = data.sentiment || {};
+        const data = res.data || {};
+        const sentiment = data.sentiment || {};
 
-      translation.textContent = data.transcription || "Not Found";
+        translation.textContent = data.transcription || "Not Found";
 
-      const score = Math.round((sentiment.score || 0) * 10000) / 100;
+        const score = Math.round((sentiment.score || 0) * 10000) / 100;
 
-      sentimentText.textContent = score >= 70 ? "POSITIVO" : (score < 40 ? "NEGATIVO" : "NEUTRO");
-      sentimentValue.textContent = score + "%";
-      sentimentValue.style.width = score + "%";
-      sentimentValue.classList.add(score >= 70 ? "bg-success" : (score < 40 ? "bg-danger" : "bg-warning"));
-      sentimentContent.classList.remove("d-none");
+        sentimentText.textContent =
+          score >= 70 ? "POSITIVO" : score < 40 ? "NEGATIVO" : "NEUTRO";
+        sentimentValue.textContent = score + "%";
+        sentimentValue.style.width = score + "%";
+        sentimentValue.classList.add(
+          score >= 70 ? "bg-success" : score < 40 ? "bg-danger" : "bg-warning"
+        );
+        sentimentContent.classList.remove("d-none");
+      })
+      .catch(err => {
+        loading.classList.add("d-none");
+        console.log(err);
 
-    }).catch(err => {
-      loading.classList.add("d-none");
-      console.log(err);
-
-      translation.textContent = "";
-      sentimentText.textContent = "";
-      sentimentValue.classList.remove("bg-success");
-      sentimentValue.classList.remove("bg-danger");
-      sentimentValue.classList.remove("bg-warning");
-      sentimentContent.classList.add("d-none");
-    });
+        translation.textContent = "";
+        sentimentText.textContent = "";
+        sentimentValue.classList.remove("bg-success");
+        sentimentValue.classList.remove("bg-danger");
+        sentimentValue.classList.remove("bg-warning");
+        sentimentContent.classList.add("d-none");
+      });
   }
 
   function liberar() {
@@ -217,22 +255,34 @@
       callback(microphone);
       return;
     }
-    if (typeof navigator.mediaDevices === "undefined" || !navigator.mediaDevices.getUserMedia) {
-      alert("Este navegador no es compatible con la API getUserMedia de WebRTC.");
+    if (
+      typeof navigator.mediaDevices === "undefined" ||
+      !navigator.mediaDevices.getUserMedia
+    ) {
+      alert(
+        "Este navegador no es compatible con la API getUserMedia de WebRTC."
+      );
       if (!!navigator.getUserMedia) {
-        alert("Este navegador parece ser compatible con la API getUserMedia en desuso.");
+        alert(
+          "Este navegador parece ser compatible con la API getUserMedia en desuso."
+        );
       }
     }
-    navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: false
-      }
-    }).then(mic => {
-      callback(mic);
-    }).catch(err => {
-      alert("No se puede capturar su micrófono. Por favor revise los permisos o los registros de su consola.");
-      console.error(err);
-    });
+    navigator.mediaDevices
+      .getUserMedia({
+        audio: {
+          echoCancellation: false
+        }
+      })
+      .then(mic => {
+        callback(mic);
+      })
+      .catch(err => {
+        alert(
+          "No se puede capturar su micrófono. Por favor revise los permisos o los registros de su consola."
+        );
+        console.error(err);
+      });
   }
 
   function replaceAudio(src) {
@@ -257,9 +307,9 @@
 
     enviar();
 
-    setTimeout(function () {
+    setTimeout(function() {
       if (!audio.paused) return;
-      setTimeout(function () {
+      setTimeout(function() {
         if (!audio.paused) return;
         audio.play();
       }, 1000);
@@ -271,7 +321,11 @@
   }
 
   function getRandomString() {
-    if (window.crypto && window.crypto.getRandomValues && navigator.userAgent.indexOf("Safari") === -1) {
+    if (
+      window.crypto &&
+      window.crypto.getRandomValues &&
+      navigator.userAgent.indexOf("Safari") === -1
+    ) {
       var a = window.crypto.getRandomValues(new Uint32Array(3)),
         token = "";
       for (var i = 0, l = a.length; i < l; i++) {
@@ -279,7 +333,9 @@
       }
       return token;
     } else {
-      return (Math.random() * new Date().getTime()).toString(36).replace(/\./g, "");
+      return (Math.random() * new Date().getTime())
+        .toString(36)
+        .replace(/\./g, "");
     }
   }
 
