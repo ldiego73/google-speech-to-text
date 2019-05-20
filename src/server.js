@@ -11,8 +11,8 @@ const Index = require("./modules/index");
 const Speech = require("./modules/speech/speech");
 
 const options = {
-  key: fs.readFileSync("./localhost-privkey.pem"),
-  cert: fs.readFileSync("./localhost-cert.pem")
+  key: fs.readFileSync("./server-privkey.pem"),
+  cert: fs.readFileSync("./server-cert.pem")
 };
 
 const PORT = 80;
