@@ -1,4 +1,5 @@
-const speech = require("@google-cloud/speech");
+const { SpeechClient } = require("@google-cloud/speech");
+const { LanguageServiceClient } = require("@google-cloud/language");
 const { Storage } = require("@google-cloud/storage");
 const Socket = require("socket.io");
 const fs = require("fs");
@@ -7,9 +8,13 @@ const Base = require("../base");
 const log = console.log;
 const error = console.error;
 
-const client = new speech.SpeechClient({
+const client = new SpeechClient({
   projectId: "personal-7",
   keyFilename: "./service-speech-to-text.json"
+});
+const natural = new LanguageServiceClient({
+  projectId: "personal-7",
+  keyFilename: "./service-natural.json"
 });
 const storage = new Storage({
   projectId: "personal-7",
@@ -24,7 +29,8 @@ const request = {
     profanityFilter: false,
     enableWordTimeOffsets: true,
     audioChannelCount: 2,
-    enableSeparateRecognitionPerChannel: true
+    enableSeparateRecognitionPerChannel: true,
+    model: "default"
   },
   interimResults: true
 };
@@ -61,6 +67,7 @@ class Speech extends Base {
 
     c.on("data", data => {
       if (recognizeStream !== null) {
+        console.log("data => ", data);
         recognizeStream.write(data);
       }
     });
@@ -110,45 +117,60 @@ class Speech extends Base {
   }
 
   async upload(ctx, next) {
-    const audio = ctx.request.files.audio;
-    const bucket = storage.bucket("personal-audios");
-    const file = bucket.file(audio.name);
+    try {
+      const audio = ctx.request.files.audio;
+      const detect = ctx.request.body.detect || false;
+      const bucket = storage.bucket("personal-audios");
+      const file = bucket.file(audio.name);
 
-    return new Promise((resolve, reject) => {
-      fs.createReadStream(audio.path)
-        .pipe(
-          file.createWriteStream({
-            metadata: {
-              contentType: audio.type
-            }
+      return new Promise((resolve, reject) => {
+        fs.createReadStream(audio.path)
+          .pipe(
+            file.createWriteStream({
+              metadata: {
+                contentType: audio.type
+              }
+            })
+          )
+          .on("error", err => {
+            log(err);
+            ctx.status = 500;
+            ctx.body = { error: err };
+            resolve();
           })
-        )
-        .on("error", err => {
-          log(err);
-          ctx.status = 500;
-          ctx.body = { error: err };
-          resolve();
-        })
-        .on("finish", async () => {
-          await file.makePublic();
-          const transcription = await this.toText(audio.name);
+          .on("finish", async () => {
+            await file.makePublic();
+            const transcription = await this.toText(audio.name);
+            const result = {};
 
-          ctx.body = { transcription: transcription };
-          resolve();
-        });
-    });
+            result.transcription = transcription;
+
+            if (detect) {
+              result.sentiment = await this.analyzeSentiment(transcription);
+            }
+
+            ctx.body = result;
+            resolve();
+          });
+      });
+    } catch (err) {
+      log(err);
+      ctx.status = 500;
+      ctx.body = { error: err };
+    }
   }
 
   async toText(name) {
     const config = {
       encoding: "LINEAR16",
       languageCode: "es-US",
-      alternativeLanguageCodes: ["es-PE", "es-CL"],
+      alternativeLanguageCodes: ["es-PE"],
       diarizationSpeakerCount: 2,
       enableSpeakerDiarization: true,
       enableAutomaticPunctuation: true,
       audioChannelCount: 2,
-      enableSeparateRecognitionPerChannel: true
+      enableSeparateRecognitionPerChannel: true,
+      model: "default"
     };
     const audio = {
       uri: `gs://personal-audios/${name}`
@@ -168,6 +190,22 @@ class Speech extends Base {
       .join("\n");
 
     return transcription;
+  }
+
+  async analyzeSentiment(text) {
+    const document = {
+      content: text,
+      type: "PLAIN_TEXT"
+    };
+    const [result] = await natural.analyzeSentiment({ document: document });
+    log(JSON.stringify(result));
+    const sentiment = result.documentSentiment;
+
+    console.log(`Text: ${text}`);
+    console.log(`Sentiment score: ${sentiment.score}`);
+    console.log(`Sentiment magnitude: ${sentiment.magnitude}`);
+
+    return sentiment;
   }
 }
 

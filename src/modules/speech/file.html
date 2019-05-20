@@ -62,7 +62,7 @@
       <div class="upload">
         <div class="con-audio">
           <div class="input">
-            <input id="audio" type="file" accept="audio/wav">
+            <input id="audio" type="file" accept="audio/wav,audio/mp3">
             <span id="titleAudio" class="title">Subir audio</span>
           </div>
         </div>
@@ -91,6 +91,20 @@
         <div id="translation">
         </div>
       </div>
+      <div id="sentimentContent" class="row mt-4 align-items-center justify-content-center d-none">
+        <div id="sentimentText" class="col-md-auto">
+          POSITIVO
+        </div>
+        <div class="col">
+          <div class="progress">
+            <div
+              id="sentimentValue"
+              class="progress-bar progress-bar-striped progress-bar-animated"
+              style="width: 50%"
+              role="progressbar">50%</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -103,6 +117,10 @@
   var btnEnviar = document.getElementById("btnEnviar");
   var btnLimpiar = document.getElementById("btnLimpiar");
   var translation = document.getElementById("translation");
+
+  var sentimentContent = document.getElementById("sentimentContent");
+  var sentimentText = document.getElementById("sentimentText");
+  var sentimentValue = document.getElementById("sentimentValue");
 
   document.addEventListener("DOMContentLoaded", event => {
     init();
@@ -125,6 +143,7 @@
     var form = new FormData();
 
     form.append("audio", file);
+    form.append("detect", true);
     loading.classList.remove("d-none");
 
     axios.post("/speech/upload", form, {
@@ -135,22 +154,40 @@
       loading.classList.add("d-none");
 
       const data = res.data || {};
+      const sentiment = data.sentiment || {};
 
       translation.textContent = data.transcription || "Not Found";
 
-      limpiar(true);
+      const score = Math.round((sentiment.score || 0) * 10000) / 100;
+
+      sentimentText.textContent = score >= 70 ? "POSITIVO" : (score < 40 ? "NEGATIVO" : "NEUTRO");
+      sentimentValue.textContent = score + "%";
+      sentimentValue.style.width = score + "%";
+      sentimentValue.classList.add(score >= 70 ? "bg-success" : (score < 40 ? "bg-danger" : "bg-warning"));
+      sentimentContent.classList.remove("d-none");
+
     }).catch(err => {
       loading.classList.add("d-none");
       console.log(err);
 
-      limpiar();
+      translation.textContent = "";
+      sentimentText.textContent = "";
+      sentimentValue.classList.remove("bg-success");
+      sentimentValue.classList.remove("bg-danger");
+      sentimentValue.classList.remove("bg-warning");
+      sentimentContent.classList.add("d-none");
     });
   }
 
-  function limpiar(notClearText) {
+  function limpiar() {
     file = null;
     audio.value = "";
     titleAudio.textContent = "Subir audio";
-    if (!notClearText) translation.textContent = "";
+    translation.textContent = "";
+    sentimentText.textContent = "";
+    sentimentValue.classList.remove("bg-success");
+    sentimentValue.classList.remove("bg-danger");
+    sentimentValue.classList.remove("bg-warning");
+    sentimentContent.classList.add("d-none");
   }
 </script>

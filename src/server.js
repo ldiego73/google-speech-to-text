@@ -27,7 +27,7 @@ const speech = new Speech(router, server);
 index.routers();
 speech.routers();
 
-app.use(koaBody({ multipart: true, json: true, maxFileSize: 50 * 1024 * 1024 }));
+app.use(koaBody({ multipart: true, json: true, maxFileSize: 100 * 1024 * 1024 }));
 app.use(router.routes());
 app.use(router.allowedMethods());
 

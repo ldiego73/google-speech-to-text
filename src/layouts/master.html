@@ -18,7 +18,7 @@
       height: 38px;
     }
 
-    .container .row {
+    .container > .row {
       height: 93vh;
     }
 
@@ -47,7 +47,7 @@
 
     .result {
       position: relative;
-      height: 500px;
+      height: 350px;
       overflow-x: auto;
       font-size: 16px;
       font-weight: 300;
@@ -83,7 +83,6 @@
   </nav>
   <div class="container">
     <%- body %>
-    <%= current %>
   </div>
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
     integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
@@ -94,9 +93,9 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
     integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
     crossorigin="anonymous"></script>
-  <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/RecordRTC/5.5.2/RecordRTC.js"></script> -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/RecordRTC/5.5.2/RecordRTC.js"></script>
   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-  <script src="https://unpkg.com/compromise@latest/builds/compromise.min.js"></script>
+  <!-- <script src="https://unpkg.com/compromise@latest/builds/compromise.min.js"></script> -->
 </body>
 
 </html>
