@@ -16,3 +16,7 @@ pm2 start src/server.js --name "web-speech"
 ```
 sudo ssh -i aws-key.pem ubuntu@PORT
 ```
+
+# Pendientes
+
+- Secuencias de llamadas (flujograma)
