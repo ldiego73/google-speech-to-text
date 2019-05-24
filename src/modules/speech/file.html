@@ -171,6 +171,7 @@
 
       const data = res.data || {};
       const sentiment = data.sentiment || {};
+      const entities = data.entities || [];
 
       translation.textContent = data.transcription || "Not Found";
 

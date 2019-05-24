@@ -170,7 +170,7 @@ class Speech extends Base {
       diarizationSpeakerCount: 2,
       enableSpeakerDiarization: true,
       enableAutomaticPunctuation: true,
-      audioChannelCount: 2,
+      audioChannelCount: 1,
       enableSeparateRecognitionPerChannel: true,
       model: "default"
     };
