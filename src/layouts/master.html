@@ -47,10 +47,38 @@
 
     .result {
       position: relative;
-      height: 350px;
+      height: 300px;
       overflow-x: auto;
       font-size: 16px;
       font-weight: 300;
+    }
+
+    #entities{
+      color: #6c757d;
+      overflow-y: auto;
+      height: 136px;
+    }
+
+    #entities .content{
+      width: 100000px;
+      display: inherit;
+      height: 136px;
+    }
+
+    @media (max-width: 991px) {
+      .tipo {
+        margin-top: 16px;
+        margin-right: 0;
+        height: 150px;
+      }
+
+      .plus {
+        height: 350px;
+      }
+
+      .texto {
+        margin-top: 16px;
+      }
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>

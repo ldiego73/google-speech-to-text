@@ -1,43 +1,24 @@
 <div class="row align-items-center justify-content-center">
-  <div class="col-sm tipo bg-dark">
+  <div class="col-lg-4 tipo bg-dark">
     <div class="text-center">
       <div class="btn-group" role="group" aria-label="Basic example">
         <button id="btnGrabar" type="button" class="btn btn-secondary">
           Grabar
         </button>
-        <button
-          id="btnDetener"
-          type="button"
-          class="btn btn-secondary"
-          disabled
-        >
+        <button id="btnDetener" type="button" class="btn btn-secondary" disabled>
           Detener
         </button>
-        <button
-          id="btnLiberar"
-          type="button"
-          class="btn btn-secondary"
-          disabled
-        >
+        <button id="btnLiberar" type="button" class="btn btn-secondary" disabled>
           Liberar
         </button>
-        <button
-          id="btnDescargar"
-          type="button"
-          class="btn btn-secondary"
-          disabled
-        >
+        <button id="btnDescargar" type="button" class="btn btn-secondary" disabled>
           Descargar
         </button>
       </div>
       <div id="loading" class="mt-4 d-none">
         <div class="d-flex align-items-center">
           <strong>Subiendo...</strong>
-          <div
-            class="spinner-border text-light ml-auto"
-            role="status"
-            aria-hidden="true"
-          ></div>
+          <div class="spinner-border text-light ml-auto" role="status" aria-hidden="true"></div>
         </div>
       </div>
       <div class="mt-4">
@@ -45,7 +26,7 @@
       </div>
     </div>
   </div>
-  <div class="col-sm texto bg-dark">
+  <div class="col-lg-7 texto bg-dark">
     <div class="px-2 py-4 w-100">
       <div class="text-left">
         <h3>Translation</h3>
@@ -53,301 +34,328 @@
       <div class="result">
         <div id="translation"></div>
       </div>
-      <div
-        id="sentimentContent"
-        class="row mt-4 align-items-center justify-content-center d-none"
-      >
+      <div id="sentimentContent" class="row mt-4 align-items-center justify-content-center d-none">
         <div id="sentimentText" class="col-md-auto">
           POSITIVO
         </div>
         <div class="col">
           <div class="progress">
-            <div
-              id="sentimentValue"
-              class="progress-bar progress-bar-striped progress-bar-animated"
-              style="width: 50%"
-              role="progressbar"
-            >
+            <div id="sentimentValue" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 50%"
+              role="progressbar">
               50%
             </div>
           </div>
         </div>
       </div>
+      <div id="entities" class="row row my-2 px-4 d-none">
+        <div class="content">
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
-<script>
-  var socket;
+  <script>
+    var socket;
 
-  var loading = document.getElementById("loading");
-  var btnGrabar = document.getElementById("btnGrabar");
-  var btnDetener = document.getElementById("btnDetener");
-  var btnLiberar = document.getElementById("btnLiberar");
-  var btnDescargar = document.getElementById("btnDescargar");
-  var translation = document.getElementById("translation");
-  var audio = document.querySelector("audio");
+    var loading = document.getElementById("loading");
+    var btnGrabar = document.getElementById("btnGrabar");
+    var btnDetener = document.getElementById("btnDetener");
+    var btnLiberar = document.getElementById("btnLiberar");
+    var btnDescargar = document.getElementById("btnDescargar");
+    var translation = document.getElementById("translation");
+    var audio = document.querySelector("audio");
 
-  var sentimentContent = document.getElementById("sentimentContent");
-  var sentimentText = document.getElementById("sentimentText");
-  var sentimentValue = document.getElementById("sentimentValue");
+    var sentimentContent = document.getElementById("sentimentContent");
+    var sentimentText = document.getElementById("sentimentText");
+    var sentimentValue = document.getElementById("sentimentValue");
 
-  var recorder;
-  var microphone;
+    var entitiesList = document.getElementById("entities");
+    var entitiesContent = document.querySelector("#entities > .content");
+    var entitieTemplate = `
+      <div class='card mr-2' style='width: 16rem;'>
+        <div class='card-body'>
+          <h5 class="card-title">{{NAME}}</h5>
+          <p class='card-text'><span class='badge badge-primary'>{{TYPE}}</span></p>
+          <p class='card-text'><small class='text-muted'>Score: {{SCORE}}</small></p>
+        </div>
+      </div>
+    `;
 
-  document.addEventListener("DOMContentLoaded", event => {
-    init();
-  });
+    var recorder;
+    var microphone;
 
-  function init() {
-    if (location.protocol.indexOf("https") === -1) {
-      socket = io("");
-
-      socket.on("connect", function(data) {
-        socket.emit("join", "Server Connected to Client");
-      });
-
-      socket.on("messages", function(data) {
-        console.log(data);
-      });
-
-      socket.on("speech", function(data) {
-        console.log("Speech", data);
-      });
-    }
-
-    btnGrabar.addEventListener("click", grabar);
-    btnDetener.addEventListener("click", detener);
-    btnLiberar.addEventListener("click", liberar);
-    btnDescargar.addEventListener("click", descargar);
-  }
-
-  function grabar() {
-    this.disabled = true;
-
-    if (!microphone) {
-      captureMicrophone(mic => {
-        microphone = mic;
-        click(btnGrabar);
-      });
-
-      return;
-    }
-
-    replaceAudio();
-
-    audio.muted = true;
-    audio.srcObject = microphone;
-
-    var options = {
-      type: "audio",
-      mimeType: "audio/wav",
-      ignoreMutedMedia: false,
-      leftChannel: false,
-      recorderType: StereoAudioRecorder,
-      ondataavailable: streamAudio
-    };
-    if (recorder) {
-      recorder.destroy();
-      recorder = null;
-    }
-
-    recorder = RecordRTC(microphone, options);
-    recorder.startRecording();
-
-    btnDetener.disabled = false;
-    btnDescargar.disabled = true;
-  }
-
-  function detener() {
-    this.disabled = true;
-    recorder.stopRecording(stopRecordingCallback);
-  }
-
-  function enviar() {
-    var form = new FormData();
-    var file = createAudio();
-
-    form.append("audio", file);
-    form.append("detect", true);
-    loading.classList.remove("d-none");
-
-    axios
-      .post("/speech/upload", form, {
-        headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      })
-      .then(res => {
-        loading.classList.add("d-none");
-
-        const data = res.data || {};
-        const sentiment = data.sentiment || {};
-
-        translation.textContent = data.transcription || "Not Found";
-
-        const score = Math.round((sentiment.score || 0) * 10000) / 100;
-
-        sentimentText.textContent =
-          score >= 70 ? "POSITIVO" : score < 40 ? "NEGATIVO" : "NEUTRO";
-        sentimentValue.textContent = score + "%";
-        sentimentValue.style.width = score + "%";
-        sentimentValue.classList.add(
-          score >= 70 ? "bg-success" : score < 40 ? "bg-danger" : "bg-warning"
-        );
-        sentimentContent.classList.remove("d-none");
-      })
-      .catch(err => {
-        loading.classList.add("d-none");
-        console.log(err);
-
-        translation.textContent = "";
-        sentimentText.textContent = "";
-        sentimentValue.classList.remove("bg-success");
-        sentimentValue.classList.remove("bg-danger");
-        sentimentValue.classList.remove("bg-warning");
-        sentimentContent.classList.add("d-none");
-      });
-  }
-
-  function liberar() {
-    this.disabled = true;
-    btnGrabar.disabled = false;
-    if (microphone) {
-      microphone.stop();
-      microphone = null;
-    }
-    if (recorder) {
-      // click(btnDetener);
-    }
-
-    translation.textContent = "";
-    sentimentText.textContent = "";
-    sentimentValue.classList.remove("bg-success");
-    sentimentValue.classList.remove("bg-danger");
-    sentimentValue.classList.remove("bg-warning");
-    sentimentContent.classList.add("d-none");
-  }
-
-  function createAudio() {
-    var blob = recorder.getBlob();
-    return new File([blob], getFileName("wav"), {
-      type: "audio/wav"
+    document.addEventListener("DOMContentLoaded", event => {
+      init();
     });
-  }
 
-  function descargar() {
-    if (!recorder || !recorder.getBlob()) return;
-    invokeSaveAsDialog(createAudio());
-  }
+    function init() {
+      if (location.protocol.indexOf("https") === -1) {
+        socket = io("");
 
-  function click(el) {
-    el.disabled = false;
-    var evt = document.createEvent("Event");
-    evt.initEvent("click", true, true);
-    el.dispatchEvent(evt);
-  }
+        socket.on("connect", function (data) {
+          socket.emit("join", "Server Connected to Client");
+        });
 
-  function captureMicrophone(callback) {
-    btnLiberar.disabled = false;
+        socket.on("messages", function (data) {
+          console.log(data);
+        });
 
-    if (microphone) {
-      callback(microphone);
-      return;
-    }
-    if (
-      typeof navigator.mediaDevices === "undefined" ||
-      !navigator.mediaDevices.getUserMedia
-    ) {
-      alert(
-        "Este navegador no es compatible con la API getUserMedia de WebRTC."
-      );
-      if (!!navigator.getUserMedia) {
-        alert(
-          "Este navegador parece ser compatible con la API getUserMedia en desuso."
-        );
+        socket.on("speech", function (data) {
+          console.log("Speech", data);
+        });
       }
+
+      btnGrabar.addEventListener("click", grabar);
+      btnDetener.addEventListener("click", detener);
+      btnLiberar.addEventListener("click", liberar);
+      btnDescargar.addEventListener("click", descargar);
     }
-    navigator.mediaDevices
-      .getUserMedia({
-        audio: {
-          echoCancellation: false
-        }
-      })
-      .then(mic => {
-        callback(mic);
-      })
-      .catch(err => {
-        alert(
-          "No se puede capturar su micrófono. Por favor revise los permisos o los registros de su consola."
-        );
-        console.error(err);
+
+    function grabar() {
+      this.disabled = true;
+
+      if (!microphone) {
+        captureMicrophone(mic => {
+          microphone = mic;
+          click(btnGrabar);
+        });
+
+        return;
+      }
+
+      replaceAudio();
+
+      audio.muted = true;
+      audio.srcObject = microphone;
+
+      var options = {
+        type: "audio",
+        mimeType: "audio/wav",
+        ignoreMutedMedia: false,
+        leftChannel: false,
+        recorderType: StereoAudioRecorder,
+        ondataavailable: streamAudio
+      };
+      if (recorder) {
+        recorder.destroy();
+        recorder = null;
+      }
+
+      recorder = RecordRTC(microphone, options);
+      recorder.startRecording();
+
+      btnDetener.disabled = false;
+      btnDescargar.disabled = true;
+    }
+
+    function detener() {
+      this.disabled = true;
+      recorder.stopRecording(stopRecordingCallback);
+    }
+
+    function enviar() {
+      var form = new FormData();
+      var file = createAudio();
+
+      form.append("audio", file);
+      form.append("detect", true);
+      loading.classList.remove("d-none");
+
+      axios
+        .post("/speech/upload", form, {
+          headers: {
+            "Content-Type": "multipart/form-data"
+          }
+        })
+        .then(res => {
+          loading.classList.add("d-none");
+
+          const data = res.data || {};
+          const sentiment = data.sentiment || {};
+          const entities = data.entities || [];
+
+          translation.textContent = data.transcription || "Not Found";
+
+          const score = Math.round((sentiment.score || 0) * 10000) / 100;
+
+          sentimentText.textContent =
+            score >= 70 ? "POSITIVO" : score < 40 ? "NEGATIVO" : "NEUTRO";
+          sentimentValue.textContent = score + "%";
+          sentimentValue.style.width = score + "%";
+          sentimentValue.classList.add(
+            score >= 70 ? "bg-success" : score < 40 ? "bg-danger" : "bg-warning"
+          );
+          sentimentContent.classList.remove("d-none");
+
+          let entitiesHtml = "";
+
+          entities.forEach(e => {
+            entitiesHtml += entitieTemplate
+              .replace("{{NAME}}", e.name)
+              .replace("{{TYPE}}", e.type)
+              .replace("{{SCORE}}", Math.round(e.sentiment.score * 10000) / 100);
+          });
+
+          entitiesContent.innerHTML = entitiesHtml;
+          entitiesList.classList.remove("d-none");
+        })
+        .catch(err => {
+          loading.classList.add("d-none");
+          console.log(err);
+
+          translation.textContent = "";
+          sentimentText.textContent = "";
+          sentimentValue.classList.remove("bg-success");
+          sentimentValue.classList.remove("bg-danger");
+          sentimentValue.classList.remove("bg-warning");
+          sentimentContent.classList.add("d-none");
+
+          entitiesContent.innerHTML = "";
+          entitiesList.classList.add("d-none");
+        });
+    }
+
+    function liberar() {
+      this.disabled = true;
+      btnGrabar.disabled = false;
+      if (microphone) {
+        microphone.stop();
+        microphone = null;
+      }
+      if (recorder) {
+        // click(btnDetener);
+      }
+
+      translation.textContent = "";
+      sentimentText.textContent = "";
+      sentimentValue.classList.remove("bg-success");
+      sentimentValue.classList.remove("bg-danger");
+      sentimentValue.classList.remove("bg-warning");
+      sentimentContent.classList.add("d-none");
+
+      entitiesContent.innerHTML = "";
+      entitiesList.classList.add("d-none");
+    }
+
+    function createAudio() {
+      var blob = recorder.getBlob();
+      return new File([blob], getFileName("wav"), {
+        type: "audio/wav"
       });
-  }
-
-  function replaceAudio(src) {
-    var newAudio = document.createElement("audio");
-
-    newAudio.controls = true;
-    newAudio.autoplay = true;
-
-    if (src) {
-      newAudio.src = src;
     }
 
-    var parentNode = audio.parentNode;
-    parentNode.innerHTML = "";
-    parentNode.appendChild(newAudio);
-    audio = newAudio;
-  }
+    function descargar() {
+      if (!recorder || !recorder.getBlob()) return;
+      invokeSaveAsDialog(createAudio());
+    }
 
-  function stopRecordingCallback() {
-    replaceAudio(URL.createObjectURL(recorder.getBlob()));
-    btnGrabar.disabled = false;
+    function click(el) {
+      el.disabled = false;
+      var evt = document.createEvent("Event");
+      evt.initEvent("click", true, true);
+      el.dispatchEvent(evt);
+    }
 
-    enviar();
+    function captureMicrophone(callback) {
+      btnLiberar.disabled = false;
 
-    setTimeout(function() {
-      if (!audio.paused) return;
-      setTimeout(function() {
-        if (!audio.paused) return;
-        audio.play();
-      }, 1000);
-
-      audio.play();
-    }, 300);
-    audio.play();
-    btnDescargar.disabled = false;
-  }
-
-  function getRandomString() {
-    if (
-      window.crypto &&
-      window.crypto.getRandomValues &&
-      navigator.userAgent.indexOf("Safari") === -1
-    ) {
-      var a = window.crypto.getRandomValues(new Uint32Array(3)),
-        token = "";
-      for (var i = 0, l = a.length; i < l; i++) {
-        token += a[i].toString(36);
+      if (microphone) {
+        callback(microphone);
+        return;
       }
-      return token;
-    } else {
-      return (Math.random() * new Date().getTime())
-        .toString(36)
-        .replace(/\./g, "");
+      if (
+        typeof navigator.mediaDevices === "undefined" ||
+        !navigator.mediaDevices.getUserMedia
+      ) {
+        alert(
+          "Este navegador no es compatible con la API getUserMedia de WebRTC."
+        );
+        if (!!navigator.getUserMedia) {
+          alert(
+            "Este navegador parece ser compatible con la API getUserMedia en desuso."
+          );
+        }
+      }
+      navigator.mediaDevices
+        .getUserMedia({
+          audio: {
+            echoCancellation: false
+          }
+        })
+        .then(mic => {
+          callback(mic);
+        })
+        .catch(err => {
+          alert(
+            "No se puede capturar su micrófono. Por favor revise los permisos o los registros de su consola."
+          );
+          console.error(err);
+        });
     }
-  }
 
-  function getFileName(fileExtension) {
-    var d = new Date();
-    var year = d.getFullYear();
-    var month = d.getMonth();
-    var date = d.getDate();
-    return year + month + date + "-" + getRandomString() + "." + fileExtension;
-  }
+    function replaceAudio(src) {
+      var newAudio = document.createElement("audio");
 
-  function streamAudio(blob) {
-    console.log("Stream audio", blob);
-  }
-</script>
+      newAudio.controls = true;
+      newAudio.autoplay = true;
+
+      if (src) {
+        newAudio.src = src;
+      }
+
+      var parentNode = audio.parentNode;
+      parentNode.innerHTML = "";
+      parentNode.appendChild(newAudio);
+      audio = newAudio;
+    }
+
+    function stopRecordingCallback() {
+      replaceAudio(URL.createObjectURL(recorder.getBlob()));
+      btnGrabar.disabled = false;
+
+      enviar();
+
+      setTimeout(function () {
+        if (!audio.paused) return;
+        setTimeout(function () {
+          if (!audio.paused) return;
+          audio.play();
+        }, 1000);
+
+        audio.play();
+      }, 300);
+      audio.play();
+      btnDescargar.disabled = false;
+    }
+
+    function getRandomString() {
+      if (
+        window.crypto &&
+        window.crypto.getRandomValues &&
+        navigator.userAgent.indexOf("Safari") === -1
+      ) {
+        var a = window.crypto.getRandomValues(new Uint32Array(3)),
+          token = "";
+        for (var i = 0, l = a.length; i < l; i++) {
+          token += a[i].toString(36);
+        }
+        return token;
+      } else {
+        return (Math.random() * new Date().getTime())
+          .toString(36)
+          .replace(/\./g, "");
+      }
+    }
+
+    function getFileName(fileExtension) {
+      var d = new Date();
+      var year = d.getFullYear();
+      var month = d.getMonth();
+      var date = d.getDate();
+      return year + month + date + "-" + getRandomString() + "." + fileExtension;
+    }
+
+    function streamAudio(blob) {
+      console.log("Stream audio", blob);
+    }
+  </script>

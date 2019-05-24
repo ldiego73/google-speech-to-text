@@ -67,19 +67,19 @@ class Speech extends Base {
 
     c.on("data", data => {
       if (recognizeStream !== null) {
-        console.log("data => ", data);
+        log("data => ", data);
         recognizeStream.write(data);
       }
     });
 
     function startRecognitionStream() {
-      console.log("Iniciando...");
+      log("Iniciando...");
 
       recognizeStream = client
         .streamingRecognize(request)
         .on("error", error)
         .on("data", data => {
-          console.log(JSON.stringify(data));
+          log(JSON.stringify(data));
           process.stdout.write(
             data.results[0] && data.results[0].alternatives[0]
               ? `Transcription: ${data.results[0].alternatives[0].transcript}\n`
@@ -96,7 +96,7 @@ class Speech extends Base {
     }
 
     function stopRecognitionStream() {
-      console.log("Finalizando...");
+      log("Finalizando...");
       if (recognizeStream) recognizeStream.end();
       recognizeStream = null;
     }
@@ -147,6 +147,8 @@ class Speech extends Base {
 
             if (detect) {
               result.sentiment = await this.analyzeSentiment(transcription);
+              //result.content = await this.analyzeContent(transcription);
+              result.entities = await this.analyzeEntitySentiment(transcription);
             }
 
             ctx.body = result;
@@ -183,8 +185,6 @@ class Speech extends Base {
     const [response] = await operation.promise();
     const results = response.results;
 
-    log(JSON.stringify(results));
-
     const transcription = results
       .map(result => result.alternatives[0].transcript)
       .join("\n");
@@ -198,14 +198,37 @@ class Speech extends Base {
       type: "PLAIN_TEXT"
     };
     const [result] = await natural.analyzeSentiment({ document: document });
-    log(JSON.stringify(result));
     const sentiment = result.documentSentiment;
 
-    console.log(`Text: ${text}`);
-    console.log(`Sentiment score: ${sentiment.score}`);
-    console.log(`Sentiment magnitude: ${sentiment.magnitude}`);
-
     return sentiment;
+  }
+
+  async analyzeEntitySentiment(text) {
+    const document = {
+      content: text,
+      type: "PLAIN_TEXT"
+    };
+
+    const [result] = await natural.analyzeEntitySentiment({ document });
+    const entities = result.entities;
+
+    console.log(JSON.stringify(entities));
+
+    return entities;
+  }
+
+  async analyzeContent(text) {
+    const document = {
+      content: text,
+      type: "PLAIN_TEXT"
+    };
+
+    const [result] = await natural.classifyText({ document });
+    const content = result.entities;
+
+    console.log(JSON.stringify(content));
+
+    return content;
   }
 }
 

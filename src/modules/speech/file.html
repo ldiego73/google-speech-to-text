@@ -57,7 +57,7 @@
 </style>
 
 <div class="row align-items-center justify-content-center">
-  <div class="col-sm tipo bg-dark">
+  <div class="col-lg-4 tipo plus bg-dark">
     <div>
       <div class="upload">
         <div class="con-audio">
@@ -82,7 +82,7 @@
       </div>
     </div>
   </div>
-  <div class="col-sm texto bg-dark">
+  <div class="col-lg-7 texto bg-dark">
     <div class="px-2 py-4 w-100">
       <div class="text-left">
         <h3>Translation</h3>
@@ -105,6 +105,10 @@
           </div>
         </div>
       </div>
+      <div id="entities" class="row row my-2 px-4 d-none">
+        <div class="content">
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -121,6 +125,18 @@
   var sentimentContent = document.getElementById("sentimentContent");
   var sentimentText = document.getElementById("sentimentText");
   var sentimentValue = document.getElementById("sentimentValue");
+
+  var entitiesList = document.getElementById("entities");
+  var entitiesContent = document.querySelector("#entities > .content");
+  var entitieTemplate = `
+    <div class='card mr-2' style='width: 16rem;'>
+      <div class='card-body'>
+        <h5 class="card-title">{{NAME}}</h5>
+        <p class='card-text'><span class='badge badge-primary'>{{TYPE}}</span></p>
+        <p class='card-text'><small class='text-muted'>Score: {{SCORE}}</small></p>
+      </div>
+    </div>
+  `;
 
   document.addEventListener("DOMContentLoaded", event => {
     init();
@@ -166,6 +182,18 @@
       sentimentValue.classList.add(score >= 70 ? "bg-success" : (score < 40 ? "bg-danger" : "bg-warning"));
       sentimentContent.classList.remove("d-none");
 
+      let entitiesHtml = "";
+
+      entities.forEach(e => {
+        entitiesHtml += entitieTemplate
+          .replace("{{NAME}}", e.name)
+          .replace("{{TYPE}}", e.type)
+          .replace("{{SCORE}}", Math.round(e.sentiment.score * 10000) / 100);
+      });
+
+      entitiesContent.innerHTML = entitiesHtml;
+      entitiesList.classList.remove("d-none");
+
     }).catch(err => {
       loading.classList.add("d-none");
       console.log(err);
@@ -176,6 +204,9 @@
       sentimentValue.classList.remove("bg-danger");
       sentimentValue.classList.remove("bg-warning");
       sentimentContent.classList.add("d-none");
+
+      entitiesContent.innerHTML = "";
+      entitiesList.classList.add("d-none");
     });
   }
 
@@ -189,5 +220,8 @@
     sentimentValue.classList.remove("bg-danger");
     sentimentValue.classList.remove("bg-warning");
     sentimentContent.classList.add("d-none");
+
+    entitiesContent.innerHTML = "";
+    entitiesList.classList.add("d-none");
   }
 </script>
